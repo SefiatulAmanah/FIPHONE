@@ -1,3 +1,4 @@
 import ItemSmall from './ItemSmall'
 import ListHorizontal from './ListHorizontal'
-export {ItemSmall, ListHorizontal}
+import SearchBar from './SearchBar'
+export {ItemSmall, ListHorizontal,SearchBar}

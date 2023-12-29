@@ -5,20 +5,22 @@ import {
   View,
   TouchableOpacity,
 } from 'react-native';
-import {Setting2} from 'iconsax-react-native';
 import React from 'react';
 import FastImage from 'react-native-fast-image';
 import {ProfileData, BlogList} from '../../../data';
 import {ItemSmall} from '../../components';
 import {fontType, colors} from '../../theme';
+import {Add, Edit} from 'iconsax-react-native';
+import {useNavigation} from '@react-navigation/native';
 
 const data = BlogList.slice(5);
 const Profile = () => {
+  const navigation = useNavigation();
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Setting2 color={colors.black()} variant="Linear" size={24} />
-      </View>
+      <TouchableOpacity style={styles.header} onPress={() => navigation.navigate('AddBlog')}>
+        <Add color={colors.black()} variant="Linear" size={24} />
+      </TouchableOpacity>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -26,7 +28,7 @@ const Profile = () => {
           gap: 10,
           paddingVertical: 20,
         }}>
-        <View style={{gap: 15, alignItems: 'center',paddingBottom:15}}>
+        <View style={{gap: 15, alignItems: 'center', paddingBottom: 15}}>
           <FastImage
             style={profile.pic}
             source={{
@@ -43,15 +45,15 @@ const Profile = () => {
             <Text style={profile.buttonText}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.textbutton}>My Bag</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.textbutton}>History</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.textbutton}>About</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.textbutton}>My Bag</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.textbutton}>History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.textbutton}>About</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -122,5 +124,22 @@ const profile = StyleSheet.create({
     fontSize: 14,
     fontFamily: fontType['Pjs-SemiBold'],
     color: colors.black(),
+  },
+  floatingButton: {
+    backgroundColor: colors.blue(),
+    padding: 15,
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    borderRadius: 10,
+    shadowColor: colors.blue(),
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+
+    elevation: 8,
   },
 });
