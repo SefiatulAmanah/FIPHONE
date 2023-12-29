@@ -163,7 +163,6 @@ const itemHorizontal = StyleSheet.create({
     borderRadius: 5,
   },
 });
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
