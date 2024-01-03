@@ -4,18 +4,48 @@ import {
   Text,
   View,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
-import React from 'react';
+import React, {useState, useCallback}from 'react';
 import FastImage from 'react-native-fast-image';
 import {ProfileData, BlogList} from '../../../data';
 import {ItemSmall} from '../../components';
 import {fontType, colors} from '../../theme';
 import {Add, Edit} from 'iconsax-react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import axios from 'axios';
 
 const data = BlogList.slice(5);
 const Profile = () => {
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(true);
+  const [productData, setproductData] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const getDataProduct = async () => {
+    try {
+      const response = await axios.get(
+        'https://659418be1493b0116069e8f9.mockapi.io/fiphoneapp/',
+      );
+      setproductData(response.data);
+      setLoading(false)
+    } catch (error) {
+        console.error(error);
+    }
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      getDataProduct()
+      setRefreshing(false);
+    }, 1500);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      getDataProduct();
+    }, [])
+  );
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.header} onPress={() => navigation.navigate('AddBlog')}>
@@ -27,7 +57,9 @@ const Profile = () => {
           paddingHorizontal: 24,
           gap: 10,
           paddingVertical: 20,
-        }}>
+        }}  refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
         <View style={{gap: 15, alignItems: 'center', paddingBottom: 15}}>
           <FastImage
             style={profile.pic}
@@ -55,6 +87,11 @@ const Profile = () => {
           <Text style={styles.textbutton}>About</Text>
         </TouchableOpacity>
       </ScrollView>
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={() => navigation.navigate('AddBlog')}>
+        <Edit color={colors.white()} variant="Linear" size={20} />
+      </TouchableOpacity>
     </View>
   );
 };
