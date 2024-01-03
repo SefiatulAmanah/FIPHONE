@@ -6,49 +6,120 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import React, {useState, useCallback}from 'react';
+import React, {useState, useRef,useCallback, useEffect} from 'react';
 import FastImage from 'react-native-fast-image';
 import {ProfileData, BlogList} from '../../../data';
 import {ItemSmall} from '../../components';
 import {fontType, colors} from '../../theme';
 import {Add, Edit} from 'iconsax-react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
-import axios from 'axios';
+import auth from '@react-native-firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ActionSheet from 'react-native-actions-sheet';
+import firestore from '@react-native-firebase/firestore'; 
 
-const data = BlogList.slice(5);
+// const data = BlogList.slice(5);
 const Profile = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [productData, setproductData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const getDataProduct = async () => {
-    try {
-      const response = await axios.get(
-        'https://659418be1493b0116069e8f9.mockapi.io/fiphoneapp/',
-      );
-      setproductData(response.data);
-      setLoading(false)
-    } catch (error) {
-        console.error(error);
-    }
+  const [profileData, setProfileData] = useState(null);
+  const actionSheetRef = useRef(null);
+  const openActionSheet = () => {
+    actionSheetRef.current?.show();
   };
+  const closeActionSheet = () => {
+    actionSheetRef.current?.hide();
+  };
+  useEffect(() => {
+    const user = auth().currentUser;
+    const fetchProductData = () => {
+      try {
+        if (user) {
+          const userId = user.uid;
+          const productCollection = firestore().collection('product');
+          const query = productCollection.where('authorId', '==', userId);
+          const unsubscribeProduct = query.onSnapshot(querySnapshot => {
+            const products = querySnapshot.docs.map(doc => ({
+              ...doc.data(),
+              id: doc.id,
+            }));
+            setproductData(products);
+            setLoading(false);
+          });
+
+          return () => {
+            unsubscribeProduct();
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching product data:', error);
+      }
+    };
+
+    const fetchProfileData = () => {
+      try {
+        const user = auth().currentUser;
+        if (user) {
+          const userId = user.uid;
+          const userRef = firestore().collection('users').doc(userId);
+
+          const unsubscribeProfile = userRef.onSnapshot(doc => {
+            if (doc.exists) {
+              const userData = doc.data();
+              setProfileData(userData);
+              fetchProductData();
+            } else {
+              console.error('Dokumen pengguna tidak ditemukan.');
+            }
+          });
+
+          return () => {
+            unsubscribeProfile();
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+      }
+    };
+    fetchProductData();
+    fetchProfileData();
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => {
-      getDataProduct()
+      firestore()
+        .collection('product')
+        .onSnapshot(querySnapshot => {
+          const products = [];
+          querySnapshot.forEach(documentSnapshot => {
+            products.push({
+              ...documentSnapshot.data(),
+              id: documentSnapshot.id,
+            });
+          });
+          setproductData(products);
+        });
       setRefreshing(false);
     }, 1500);
   }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      getDataProduct();
-    }, [])
-  );
+  const handleLogout = async () => {
+    try {
+      closeActionSheet();
+      await auth().signOut();
+      await AsyncStorage.removeItem('userData');
+      navigation.replace('Login');
+    } catch (error) {
+      console.error(error);
+    }
+  };
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.header} onPress={() => navigation.navigate('AddBlog')}>
+      <TouchableOpacity
+        style={styles.header}
+        onPress={() => navigation.navigate('AddBlog')}>
         <Add color={colors.black()} variant="Linear" size={24} />
       </TouchableOpacity>
       <ScrollView
@@ -57,9 +128,10 @@ const Profile = () => {
           paddingHorizontal: 24,
           gap: 10,
           paddingVertical: 20,
-        }}  refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        >
+        }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
         <View style={{gap: 15, alignItems: 'center', paddingBottom: 15}}>
           <FastImage
             style={profile.pic}
@@ -92,6 +164,50 @@ const Profile = () => {
         onPress={() => navigation.navigate('AddBlog')}>
         <Edit color={colors.white()} variant="Linear" size={20} />
       </TouchableOpacity>
+      <ActionSheet
+        ref={actionSheetRef}
+        containerStyle={{
+          borderTopLeftRadius: 25,
+          borderTopRightRadius: 25,
+        }}
+        indicatorStyle={{
+          width: 100,
+        }}
+        gestureEnabled={true}
+        defaultOverlayOpacity={0.3}>
+        <TouchableOpacity
+          style={{
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingVertical: 15,
+          }}
+          onPress={handleLogout}>
+          <Text
+            style={{
+              fontFamily: fontType['Pjs-Medium'],
+              color: colors.black(),
+              fontSize: 18,
+            }}>
+            Log out
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingVertical: 15,
+          }}
+          onPress={closeActionSheet}>
+          <Text
+            style={{
+              fontFamily: fontType['Pjs-Medium'],
+              color: 'red',
+              fontSize: 18,
+            }}>
+            Cancel
+          </Text>
+        </TouchableOpacity>
+      </ActionSheet>
     </View>
   );
 };

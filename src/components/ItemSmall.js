@@ -7,11 +7,12 @@ import {useNavigation} from '@react-navigation/native';
 const ItemSmall = ({item}) => {
   const navigation = useNavigation();
   return (
-    <TouchableOpacity style={styles.cardItem} onPress={() => navigation.navigate('BlogDetail', {blogId: item.id})}>
+    <TouchableOpacity style={styles.cardItem} 
+    onPress={() => navigation.navigate('ProductDetail', {productId: item.id})}>
       <FastImage
         style={styles.cardImage}
         source={{
-          uri: item.image,
+          uri: item?.image,
           headers: {Authorization: 'someAuthToken'},
           priority: FastImage.priority.high,
         }}
@@ -24,8 +25,8 @@ const ItemSmall = ({item}) => {
             gap:30
           }}>
           <View style={{gap: 5, flex:1}}>
-            <Text style={styles.cardCategory}>{item.title}</Text>
-            <Text style={styles.cardTitle}>{item.harga}</Text>
+            <Text style={styles.cardCategory}>{item?.title}</Text>
+            <Text style={styles.cardTitle}>{item?.harga}</Text>
           </View>
         </View>
       </View>

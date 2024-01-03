@@ -6,26 +6,24 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
+  KeyboardAvoidingView,
 } from 'react-native';
-import {ArrowLeft} from 'iconsax-react-native';
+import {ArrowLeft, AddSquare, Add} from 'iconsax-react-native';
 import {useNavigation} from '@react-navigation/native';
 import {fontType, colors} from '../../theme';
-import axios from 'axios';
+import ImagePicker from 'react-native-image-crop-picker';
+import storage from '@react-native-firebase/storage';
+import firestore from '@react-native-firebase/firestore';
+import FastImage from 'react-native-fast-image';
+import auth from '@react-native-firebase/auth';
 
-const AddBlogForm = () => {
+const AddProductForm = () => {
   const [loading, setLoading] = useState(false);
-  const dataCategory = [
-    {id: 1, name: 'iphone'},
-    {id: 2, name: 'Samsung'},
-    {id: 3, name: 'Oppo'},
-    {id: 4, name: 'Redmi'},
-    {id: 5, name: 'Vivo'},
-  ];
   const [productData, setproductData] = useState({
     title: '',
     harga: '',
     content: '',
-    category: {},
   });
   const handleChange = (key, value) => {
     setproductData({
@@ -33,9 +31,53 @@ const AddBlogForm = () => {
       [key]: value,
     });
   };
+  const handleUpload = async () => {
+    let filename = image.substring(image.lastIndexOf('/') + 1);
+    const extension = filename.split('.').pop();
+    const name = filename.split('.').slice(0, -1).join('.');
+    filename = name + Date.now() + '.' + extension;
+    const reference = storage().ref(`blogimages/${filename}`);
+
+    setLoading(true);
+    try {
+      const authorId = auth().currentUser.uid;
+      await reference.putFile(image);
+      const url = await reference.getDownloadURL();
+      await firestore().collection('product').add({
+        title: productData.title,
+        harga: productData.harga,
+        image: url,
+        content: productData.content,
+        authorId
+      });
+      setLoading(false);
+      console.log('Blog added!');
+      navigation.navigate('Home');
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const handleImagePick = async () => {
+    ImagePicker.openPicker({
+      width: 1920,
+      height: 1080,
+      cropping: true,
+    })
+      .then(image => {
+        console.log(image);
+        setImage(image.path);
+      })
+      .catch(error => {
+        console.log(error);
+      });
+  };
   const [image, setImage] = useState(null);
   const navigation = useNavigation();
   return (
+    <KeyboardAvoidingView
+      style={{flex: 1}}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      enabled>
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -61,11 +103,63 @@ const AddBlogForm = () => {
             style={textInput.title}
           />
         </View>
-        <View style={[textInput.borderDashed]}>
+        {image ? (
+          <View style={{position: 'relative'}}>
+            <FastImage
+              style={{width: '100%', height: 127, borderRadius: 5}}
+              source={{
+                uri: image,
+                headers: {Authorization: 'someAuthToken'},
+                priority: FastImage.priority.high,
+              }}
+              resizeMode={FastImage.resizeMode.cover}
+            />
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                top: -5,
+                right: -5,
+                backgroundColor: colors.blue(),
+                borderRadius: 25,
+              }}
+              onPress={() => setImage(null)}>
+              <Add
+                size={20}
+                variant="Linear"
+                color={colors.white()}
+                style={{transform: [{rotate: '45deg'}]}}
+              />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={handleImagePick}>
+            <View
+              style={[
+                textInput.borderDashed,
+                {
+                  gap: 10,
+                  paddingVertical: 30,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                },
+              ]}>
+              <AddSquare color={colors.grey(0.6)} variant="Linear" size={42} />
+              <Text
+                style={{
+                  fontFamily: fontType['Pjs-Regular'],
+                  fontSize: 12,
+                  color: colors.grey(0.6),
+                }}>
+                Upload Thumbnail
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        <View style={[textInput.borderDashed, {minHeight: 250}]}>
           <TextInput
             placeholder="Harga"
-            value={image}
-            onChangeText={text => setImage(text)}
+            value={productData.harga}
+            onChangeText={text => handleChange('harga', text)}
             placeholderTextColor={colors.black(0.6)}
             style={textInput.content}
           />
@@ -77,15 +171,6 @@ const AddBlogForm = () => {
             onChangeText={text => handleChange('content', text)}
             placeholderTextColor={colors.black(0.6)}
             multiline
-            style={textInput.content}
-          />
-        </View>
-        <View style={[textInput.borderDashed]}>
-          <TextInput
-            placeholder="Image"
-            value={image}
-            onChangeText={text => setImage(text)}
-            placeholderTextColor={colors.black(0.6)}
             style={textInput.content}
           />
         </View>
@@ -101,33 +186,12 @@ const AddBlogForm = () => {
         </TouchableOpacity>
       </View>
     </View>
+    </KeyboardAvoidingView>
   );
 };
 
-export default AddBlogForm;
-const handleUpload = async () => {
-  setLoading(true);
-  try {
-    await axios
-      .post('https://659418be1493b0116069e8f9.mockapi.io/fiphoneapp/', {
-        title: productData.title,
-        category: productData.category,
-        harga: productData.harga,
-        image,
-        content: productData.content,
-      })
-      .then(function (response) {
-        console.log(response);
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
-    setLoading(false);
-    navigation.navigate('Profile');
-  } catch (e) {
-    console.log(e);
-  }
-};
+export default AddProductForm;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

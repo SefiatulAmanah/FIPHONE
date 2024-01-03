@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "574612602343",
+    "project_id": "fiphoneapp",
+    "storage_bucket": "fiphoneapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:574612602343:android:5103a42fc4d6c425f25142",
+        "android_client_info": {
+          "package_name": "com.fiphoneapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgbbDPagL9HKdPudVmEmaQe35anwZInEU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

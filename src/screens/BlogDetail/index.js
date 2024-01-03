@@ -4,30 +4,26 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
+  Animated,
+  ActivityIndicator,
 } from 'react-native';
-import React, {useState} from 'react';
-import {
-  ArrowLeft,
-  Like1,
-  Receipt21,
-  Message,
-  Share,
-  More,
-} from 'iconsax-react-native';
+import React, {useState, useRef, useEffect} from 'react';
+import {ArrowLeft, Share, More} from 'iconsax-react-native';
 import {useNavigation} from '@react-navigation/native';
-import {BlogList} from '../../../data';
 import FastImage from 'react-native-fast-image';
 import {fontType, colors} from '../../theme';
-import axios from 'axios';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
 import ActionSheet from 'react-native-actions-sheet';
+import auth from '@react-native-firebase/auth';
 
-const BlogDetail = ({route}) => {
-  const {blogId} = route.params;
-  const [selectedBlog, setSelectedBlog] = useState(null);
+const ProductDetail = ({route}) => {
+  const {productId} = route.params;
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
-
+  const userId = auth().currentUser.uid;
   const actionSheetRef = useRef(null);
-
   const openActionSheet = () => {
     actionSheetRef.current?.show();
   };
@@ -37,49 +33,58 @@ const BlogDetail = ({route}) => {
   };
 
   useEffect(() => {
-    getBlogById();
-  }, [blogId]);
-
-  const getBlogById = async () => {
-    try {
-      const response = await axios.get(
-        `https://659418be1493b0116069e8f9.mockapi.io/fiphoneapp//${blogId}`,
-      );
-      setSelectedBlog(response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    const subscriber = firestore()
+      .collection('product')
+      .doc(productId)
+      .onSnapshot(documentSnapshot => {
+        const productData = documentSnapshot.data();
+        if (productData) {
+          console.log('Product Data: ', productData);
+          setSelectedProduct(productData);
+        } else {
+          console.log(`Product with ID ${productId} not found.`);
+        }
+      });
+    setLoading(false); // Move setLoading inside the callback
+    return () => subscriber();
+  }, [productId]);
 
   const navigateEdit = () => {
     closeActionSheet();
-    navigation.navigate('EditBlog', {blogId});
-  };
-  const handleDelete = async () => {
-    await axios
-      .delete(
-        `https://659418be1493b0116069e8f9.mockapi.io/fiphoneapp/${blogId}`,
-      )
-      .then(() => {
-        closeActionSheet();
-        navigation.navigate('Profile');
-      })
-      .catch(error => {
-        console.error(error);
-      });
+    navigation.navigate('EditProduct', {productId});
   };
 
-  const navigation = useNavigation();
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      await firestore()
+        .collection('product')
+        .doc(productId)
+        .delete()
+        .then(() => {
+          console.log('Product deleted!');
+        });
+
+      if (selectedProduct?.image) {
+        const imageRef = storage().refFromURL(selectedProduct?.image);
+        await imageRef.delete();
+      }
+
+      console.log('Product deleted!');
+      closeActionSheet();
+      setSelectedProduct(null);
+      setLoading(false);
+      navigation.navigate('Profile');
+    } catch (error) {
+      console.error(error);
+      // setLoading(false); // Make sure to set loading to false in case of an error
+    }
+  };
   const scrollY = useRef(new Animated.Value(0)).current;
   const diffClampY = Animated.diffClamp(scrollY, 0, 52);
   const headerY = diffClampY.interpolate({
     inputRange: [0, 52],
     outputRange: [0, -52],
-  });
-  const bottomBarY = diffClampY.interpolate({
-    inputRange: [0, 52],
-    outputRange: [0, 52],
   });
 
   const toggleIcon = iconName => {
@@ -94,6 +99,7 @@ const BlogDetail = ({route}) => {
       },
     }));
   };
+
   return (
     <View style={styles.container}>
       <Animated.View
@@ -131,54 +137,17 @@ const BlogDetail = ({route}) => {
           <FastImage
             style={styles.image}
             source={{
-              uri: selectedBlog?.image,
+              uri: selectedProduct?.image,
               headers: {Authorization: 'someAuthToken'},
               priority: FastImage.priority.high,
             }}
             resizeMode={FastImage.resizeMode.cover}></FastImage>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              marginTop: 15,
-            }}>
-            <Text style={styles.category}>{selectedBlog?.category.name}</Text>
-            <Text style={styles.date}>
-              {formatDate(selectedBlog?.createdAt)}
-            </Text>
-          </View>
-          <Text style={styles.title}>{selectedBlog?.title}</Text>
-          <Text style={styles.content}>{selectedBlog?.content}</Text>
+          <Text style={styles.title}>{selectedProduct?.title}</Text>
+          <Text style={styles.title}>{selectedProduct?.harga}</Text>
+          <Text style={styles.content}>{selectedProduct?.content}</Text>
         </Animated.ScrollView>
       )}
-      <Animated.View
-        style={[styles.bottomBar, {transform: [{translateY: bottomBarY}]}]}>
-        <View style={{flexDirection: 'row', gap: 5, alignItems: 'center'}}>
-          <TouchableOpacity onPress={() => toggleIcon('liked')}>
-            <Like1
-              color={iconStates.liked.color}
-              variant={iconStates.liked.variant}
-              size={24}
-            />
-          </TouchableOpacity>
-          <Text style={styles.info}>
-            {formatNumber(selectedBlog?.totalLikes)}
-          </Text>
-        </View>
-        <View style={{flexDirection: 'row', gap: 5, alignItems: 'center'}}>
-          <Message color={colors.grey(0.6)} variant="Linear" size={24} />
-          <Text style={styles.info}>
-            {formatNumber(selectedBlog?.totalComments)}
-          </Text>
-        </View>
-        <TouchableOpacity onPress={() => toggleIcon('bookmarked')}>
-          <Receipt21
-            color={iconStates.bookmarked.color}
-            variant={iconStates.bookmarked.variant}
-            size={24}
-          />
-        </TouchableOpacity>
-      </Animated.View>
+
       <ActionSheet
         ref={actionSheetRef}
         containerStyle={{
@@ -242,7 +211,7 @@ const BlogDetail = ({route}) => {
     </View>
   );
 };
-export default BlogDetail;
+export default ProductDetail;
 const styles = StyleSheet.create({
   container: {
     flex: 1,

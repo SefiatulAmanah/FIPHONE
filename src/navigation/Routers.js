@@ -1,7 +1,16 @@
 import React from 'react';
 import {createStackNavigator, TransitionPresets} from '@react-navigation/stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {Home, Product, Profile, BlogDetail, Search,AddBlogForm, EditBlogForm} from '../screens';
+import {
+  Home,
+  Product,
+  Profile,
+  ProductDetail,
+  Search,
+  AddProductForm,
+  EditProductForm,
+  SplashScreen,Register,Login
+} from '../screens';
 import {fontType, colors} from '../theme';
 import {Home2, ArchiveBox, ProfileCircle} from 'iconsax-react-native';
 
@@ -75,15 +84,15 @@ function MainApp() {
 }
 const Router = () => {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator initialRouteName="SplashScreen">
       <Stack.Screen
         name="MainApp"
         component={MainApp}
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name="BlogDetail"
-        component={BlogDetail}
+        name="ProductDetail"
+        component={ProductDetail}
         options={{
           headerShown: false,
           animationEnabled: true,
@@ -103,7 +112,7 @@ const Router = () => {
       />
       <Stack.Screen
         name="AddBlog"
-        component={AddBlogForm}
+        component={AddProductForm}
         options={{
           headerShown: false,
           animationEnabled: true,
@@ -115,7 +124,7 @@ const Router = () => {
       />
       <Stack.Screen
         name="EditProduct"
-        component={EditBlogForm}
+        component={EditProductForm}
         options={{
           headerShown: false,
           animationEnabled: true,
@@ -124,6 +133,21 @@ const Router = () => {
           gestureDirection: 'horizontal',
           ...TransitionPresets.SlideFromRightIOS,
         }}
+      />
+      <Stack.Screen
+        name="SplashScreen"
+        component={SplashScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="Register"
+        component={Register}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="Login"
+        component={Login}
+        options={{headerShown: false}}
       />
     </Stack.Navigator>
   );
